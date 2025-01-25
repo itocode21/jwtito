@@ -8,6 +8,7 @@ import (
 	"github.com/itocode21/jwtito/jwt"
 )
 
+// GinMiddleware возвращает middleware для Gin, которое проверяет JWT токен.
 func GinMiddleware(secretKey string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
