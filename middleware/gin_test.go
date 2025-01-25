@@ -6,22 +6,23 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/itocode21/jwtito/jwt"
-	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEchoMiddleware_Success(t *testing.T) {
-	// Инициализация Echo
-	e := echo.New()
+func TestGinMiddleware_Success(t *testing.T) {
+	// Инициализация Gin
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
 	secretKey := "my-secret-key"
-	e.Use(EchoMiddleware(secretKey))
+	r.Use(GinMiddleware(secretKey))
 
 	// Тестовый маршрут
-	e.GET("/test", func(c echo.Context) error {
-		userID := c.Get("user_id").(int)
-		customClaims := c.Get("custom_claims").(map[string]interface{})
-		return c.JSON(http.StatusOK, map[string]interface{}{
+	r.GET("/test", func(c *gin.Context) {
+		userID := c.MustGet("user_id").(int)
+		customClaims := c.MustGet("custom_claims").(map[string]interface{})
+		c.JSON(http.StatusOK, gin.H{
 			"message":       "success",
 			"user_id":       userID,
 			"custom_claims": customClaims,
@@ -43,7 +44,7 @@ func TestEchoMiddleware_Success(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	// Выполняем запрос
-	e.ServeHTTP(rec, req)
+	r.ServeHTTP(rec, req)
 
 	// Проверяем ответ
 	assert.Equal(t, http.StatusOK, rec.Code)
@@ -57,15 +58,16 @@ func TestEchoMiddleware_Success(t *testing.T) {
 	}`, rec.Body.String())
 }
 
-func TestEchoMiddleware_NoToken(t *testing.T) {
-	// Инициализация Echo
-	e := echo.New()
+func TestGinMiddleware_NoToken(t *testing.T) {
+	// Инициализация Gin
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
 	secretKey := "my-secret-key"
-	e.Use(EchoMiddleware(secretKey))
+	r.Use(GinMiddleware(secretKey))
 
 	// Тестовый маршрут
-	e.GET("/test", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, map[string]string{"message": "success"})
+	r.GET("/test", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "success"})
 	})
 
 	// Создаем запрос без токена
@@ -73,22 +75,23 @@ func TestEchoMiddleware_NoToken(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	// Выполняем запрос
-	e.ServeHTTP(rec, req)
+	r.ServeHTTP(rec, req)
 
 	// Проверяем ответ
 	assert.Equal(t, http.StatusUnauthorized, rec.Code)
 	assert.JSONEq(t, `{"error":"Authorization header is required"}`, rec.Body.String())
 }
 
-func TestEchoMiddleware_InvalidTokenFormat(t *testing.T) {
-	// Инициализация Echo
-	e := echo.New()
+func TestGinMiddleware_InvalidTokenFormat(t *testing.T) {
+	// Инициализация Gin
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
 	secretKey := "my-secret-key"
-	e.Use(EchoMiddleware(secretKey))
+	r.Use(GinMiddleware(secretKey))
 
 	// Тестовый маршрут
-	e.GET("/test", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, map[string]string{"message": "success"})
+	r.GET("/test", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "success"})
 	})
 
 	// Создаем запрос с некорректным форматом токена
@@ -97,22 +100,23 @@ func TestEchoMiddleware_InvalidTokenFormat(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	// Выполняем запрос
-	e.ServeHTTP(rec, req)
+	r.ServeHTTP(rec, req)
 
 	// Проверяем ответ
 	assert.Equal(t, http.StatusUnauthorized, rec.Code)
 	assert.JSONEq(t, `{"error":"Invalid authorization header format"}`, rec.Body.String())
 }
 
-func TestEchoMiddleware_ExpiredToken(t *testing.T) {
-	// Инициализация Echo
-	e := echo.New()
+func TestGinMiddleware_ExpiredToken(t *testing.T) {
+	// Инициализация Gin
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
 	secretKey := "my-secret-key"
-	e.Use(EchoMiddleware(secretKey))
+	r.Use(GinMiddleware(secretKey))
 
 	// Тестовый маршрут
-	e.GET("/test", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, map[string]string{"message": "success"})
+	r.GET("/test", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "success"})
 	})
 
 	// Генерация токена с истекшим сроком действия
@@ -126,22 +130,23 @@ func TestEchoMiddleware_ExpiredToken(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	// Выполняем запрос
-	e.ServeHTTP(rec, req)
+	r.ServeHTTP(rec, req)
 
 	// Проверяем ответ
 	assert.Equal(t, http.StatusUnauthorized, rec.Code)
 	assert.JSONEq(t, `{"error":"Token has expired"}`, rec.Body.String())
 }
 
-func TestEchoMiddleware_InvalidToken(t *testing.T) {
-	// Инициализация Echo
-	e := echo.New()
+func TestGinMiddleware_InvalidToken(t *testing.T) {
+	// Инициализация Gin
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
 	secretKey := "my-secret-key"
-	e.Use(EchoMiddleware(secretKey))
+	r.Use(GinMiddleware(secretKey))
 
 	// Тестовый маршрут
-	e.GET("/test", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, map[string]string{"message": "success"})
+	r.GET("/test", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "success"})
 	})
 
 	// Создаем запрос с невалидным токеном
@@ -150,7 +155,7 @@ func TestEchoMiddleware_InvalidToken(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	// Выполняем запрос
-	e.ServeHTTP(rec, req)
+	r.ServeHTTP(rec, req)
 
 	// Проверяем ответ
 	assert.Equal(t, http.StatusUnauthorized, rec.Code)
