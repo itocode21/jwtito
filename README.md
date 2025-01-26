@@ -10,7 +10,7 @@
 - 🔒 Support for access and refresh tokens.
 - 🛠️ Built-in claims validation (exp, iss, sub, etc.).
 - 🧩 Ready-to-use middleware for Gin and Echo.
-- ⚡ Support for popular signing algorithms (HS256, RS256).
+- ⚡ Support for popular signing algorithms (HS256).
 
 ## Installation
 ```bash
