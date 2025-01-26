@@ -181,3 +181,106 @@ func TestGinMiddleware_InvalidToken(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, rec.Code)
 	assert.JSONEq(t, `{"error":"Invalid token"}`, rec.Body.String())
 }
+
+// Новые тесты для refresh-токенов
+
+func TestGinRefreshToken_Success(t *testing.T) {
+	// Инициализация Gin
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	accessSecretKey := "my-access-secret-key"
+	refreshSecretKey := "my-refresh-secret-key"
+
+	// Endpoint для обновления токена
+	r.POST("/refresh", RefreshTokenHandler(accessSecretKey, refreshSecretKey))
+
+	// Генерация refresh-токена
+	refreshToken, err := jwt.GenerateRefreshToken(123, refreshSecretKey, time.Hour*24*7) // 7 дней
+	assert.NoError(t, err)
+	assert.NotEmpty(t, refreshToken)
+
+	// Создаем запрос с валидным refresh-токеном
+	req := httptest.NewRequest(http.MethodPost, "/refresh", nil)
+	req.Header.Set("Authorization", "Bearer "+refreshToken)
+	rec := httptest.NewRecorder()
+
+	// Выполняем запрос
+	r.ServeHTTP(rec, req)
+
+	// Проверяем ответ
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Contains(t, rec.Body.String(), "access_token")
+}
+
+func TestGinRefreshToken_ExpiredToken(t *testing.T) {
+	// Инициализация Gin
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	accessSecretKey := "my-access-secret-key"
+	refreshSecretKey := "my-refresh-secret-key"
+
+	// Endpoint для обновления токена
+	r.POST("/refresh", RefreshTokenHandler(accessSecretKey, refreshSecretKey))
+
+	// Генерация refresh-токена с истекшим сроком действия
+	refreshToken, err := jwt.GenerateRefreshToken(123, refreshSecretKey, -time.Hour)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, refreshToken)
+
+	// Создаем запрос с истекшим refresh-токеном
+	req := httptest.NewRequest(http.MethodPost, "/refresh", nil)
+	req.Header.Set("Authorization", "Bearer "+refreshToken)
+	rec := httptest.NewRecorder()
+
+	// Выполняем запрос
+	r.ServeHTTP(rec, req)
+
+	// Проверяем ответ
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+	assert.JSONEq(t, `{"error":"Invalid refresh token"}`, rec.Body.String())
+}
+
+func TestGinRefreshToken_InvalidToken(t *testing.T) {
+	// Инициализация Gin
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	accessSecretKey := "my-access-secret-key"
+	refreshSecretKey := "my-refresh-secret-key"
+
+	// Endpoint для обновления токена
+	r.POST("/refresh", RefreshTokenHandler(accessSecretKey, refreshSecretKey))
+
+	// Создаем запрос с невалидным refresh-токеном
+	req := httptest.NewRequest(http.MethodPost, "/refresh", nil)
+	req.Header.Set("Authorization", "Bearer invalid.refresh.token.here")
+	rec := httptest.NewRecorder()
+
+	// Выполняем запрос
+	r.ServeHTTP(rec, req)
+
+	// Проверяем ответ
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+	assert.JSONEq(t, `{"error":"Invalid refresh token"}`, rec.Body.String())
+}
+
+func TestGinRefreshToken_NoToken(t *testing.T) {
+	// Инициализация Gin
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	accessSecretKey := "my-access-secret-key"
+	refreshSecretKey := "my-refresh-secret-key"
+
+	// Endpoint для обновления токена
+	r.POST("/refresh", RefreshTokenHandler(accessSecretKey, refreshSecretKey))
+
+	// Создаем запрос без токена
+	req := httptest.NewRequest(http.MethodPost, "/refresh", nil)
+	rec := httptest.NewRecorder()
+
+	// Выполняем запрос
+	r.ServeHTTP(rec, req)
+
+	// Проверяем ответ
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+	assert.JSONEq(t, `{"error":"Authorization header is required"}`, rec.Body.String())
+}

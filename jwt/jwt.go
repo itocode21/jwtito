@@ -19,6 +19,7 @@ type Claims struct {
 	CustomClaims map[string]interface{} `json:"custom_claims,omitempty"`
 }
 
+// GenerateToken создает access-токен.
 func GenerateToken(userID int, secretKey string, expiresIn time.Duration, customClaims map[string]interface{}) (string, error) {
 	claims := &Claims{
 		UserID: userID,
@@ -33,6 +34,21 @@ func GenerateToken(userID int, secretKey string, expiresIn time.Duration, custom
 	return token.SignedString([]byte(secretKey))
 }
 
+// GenerateRefreshToken создает refresh-токен.
+func GenerateRefreshToken(userID int, secretKey string, expiresIn time.Duration) (string, error) {
+	claims := &Claims{
+		UserID: userID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(expiresIn)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(secretKey))
+}
+
+// ParseToken проверяет и парсит токен (access или refresh).
 func ParseToken(tokenString, secretKey string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(secretKey), nil

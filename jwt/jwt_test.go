@@ -92,3 +92,73 @@ func TestParseToken_InvalidSecretKey(t *testing.T) {
 	assert.Nil(t, claims)
 	assert.Equal(t, ErrInvalidToken, err)
 }
+
+// Новые тесты для refresh-токенов
+
+func TestGenerateRefreshToken(t *testing.T) {
+	secretKey := "my-refresh-secret-key"
+	userID := 123
+
+	// Генерация refresh-токена
+	refreshToken, err := GenerateRefreshToken(userID, secretKey, time.Hour*24*7) // 7 дней
+	assert.NoError(t, err)
+	assert.NotEmpty(t, refreshToken)
+}
+
+func TestParseRefreshToken_ValidToken(t *testing.T) {
+	secretKey := "my-refresh-secret-key"
+	userID := 123
+
+	// Генерация refresh-токена
+	refreshToken, err := GenerateRefreshToken(userID, secretKey, time.Hour*24*7)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, refreshToken)
+
+	// Парсинг refresh-токена
+	claims, err := ParseToken(refreshToken, secretKey)
+	assert.NoError(t, err)
+	assert.Equal(t, userID, claims.UserID)
+}
+
+func TestParseRefreshToken_ExpiredToken(t *testing.T) {
+	secretKey := "my-refresh-secret-key"
+	userID := 123
+
+	// Генерация refresh-токена с истекшим сроком действия
+	refreshToken, err := GenerateRefreshToken(userID, secretKey, -time.Hour)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, refreshToken)
+
+	// Парсинг истекшего refresh-токена
+	claims, err := ParseToken(refreshToken, secretKey)
+	assert.Error(t, err)
+	assert.Nil(t, claims)
+	assert.Equal(t, ErrExpiredToken, err)
+}
+
+func TestParseRefreshToken_InvalidToken(t *testing.T) {
+	secretKey := "my-refresh-secret-key"
+	invalidToken := "invalid.refresh.token.here"
+
+	// Парсинг невалидного refresh-токена
+	claims, err := ParseToken(invalidToken, secretKey)
+	assert.Error(t, err)
+	assert.Nil(t, claims)
+	assert.Equal(t, ErrInvalidToken, err)
+}
+
+func TestParseRefreshToken_InvalidSecretKey(t *testing.T) {
+	secretKey := "my-refresh-secret-key"
+	userID := 123
+
+	// Генерация refresh-токена
+	refreshToken, err := GenerateRefreshToken(userID, secretKey, time.Hour*24*7)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, refreshToken)
+
+	// Парсинг refresh-токена с неверным секретным ключом
+	claims, err := ParseToken(refreshToken, "wrong-refresh-secret-key")
+	assert.Error(t, err)
+	assert.Nil(t, claims)
+	assert.Equal(t, ErrInvalidToken, err)
+}
