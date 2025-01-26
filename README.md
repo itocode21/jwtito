@@ -1,5 +1,7 @@
 # JWTito
 
+## Current Version: v0.1.0
+[![Release](https://img.shields.io/badge/release-v0.1.0-blue.svg)](https://github.com/itocode21/jwtito/releases/tag/v0.1.0)
 [![Go Report Card](https://goreportcard.com/badge/github.com/itocode21/jwtito)](https://goreportcard.com/report/github.com/itocode21/jwtito)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/itocode21/jwtito/blob/main/LICENSE)
 
