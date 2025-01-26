@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGenerateAndParseToken(t *testing.T) {
+func TestGenerateToken(t *testing.T) {
 	secretKey := "my-secret-key"
 	userID := 123
 	customClaims := map[string]interface{}{
@@ -15,10 +15,26 @@ func TestGenerateAndParseToken(t *testing.T) {
 		"email": "user@example.com",
 	}
 
+	// Генерация токена
+	token, err := GenerateToken(userID, secretKey, time.Hour, customClaims)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, token)
+}
+
+func TestParseToken_ValidToken(t *testing.T) {
+	secretKey := "my-secret-key"
+	userID := 123
+	customClaims := map[string]interface{}{
+		"role":  "admin",
+		"email": "user@example.com",
+	}
+
+	// Генерация токена
 	token, err := GenerateToken(userID, secretKey, time.Hour, customClaims)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
 
+	// Парсинг токена
 	claims, err := ParseToken(token, secretKey)
 	assert.NoError(t, err)
 	assert.Equal(t, userID, claims.UserID)
@@ -26,57 +42,7 @@ func TestGenerateAndParseToken(t *testing.T) {
 	assert.Equal(t, "user@example.com", claims.CustomClaims["email"])
 }
 
-func TestExpiredToken(t *testing.T) {
-	secretKey := "my-secret-key"
-	userID := 123
-	customClaims := map[string]interface{}{
-		"role":  "admin",
-		"email": "user@example.com",
-	}
-
-	token, err := GenerateToken(userID, secretKey, -time.Hour, customClaims)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, token)
-
-	_, err = ParseToken(token, secretKey)
-	assert.Equal(t, ErrExpiredToken, err)
-}
-
-func TestInvalidToken(t *testing.T) {
-	secretKey := "my-secret-key"
-	invalidToken := "invalid.token.here"
-
-	_, err := ParseToken(invalidToken, secretKey)
-	assert.Equal(t, ErrInvalidToken, err)
-}
-
-func TestRefreshToken(t *testing.T) {
-	secretKey := "my-secret-key"
-	userID := 123
-	customClaims := map[string]interface{}{
-		"role":  "admin",
-		"email": "user@example.com",
-	}
-
-	// Генерация токена с коротким сроком действия
-	token, err := GenerateToken(userID, secretKey, time.Minute, customClaims)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, token)
-
-	// Обновление токена
-	newToken, err := RefreshToken(token, secretKey, time.Hour)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, newToken)
-
-	// Проверка нового токена
-	claims, err := ParseToken(newToken, secretKey)
-	assert.NoError(t, err)
-	assert.Equal(t, userID, claims.UserID)
-	assert.Equal(t, "admin", claims.CustomClaims["role"])
-	assert.Equal(t, "user@example.com", claims.CustomClaims["email"])
-}
-
-func TestRefreshExpiredToken(t *testing.T) {
+func TestParseToken_ExpiredToken(t *testing.T) {
 	secretKey := "my-secret-key"
 	userID := 123
 	customClaims := map[string]interface{}{
@@ -85,11 +51,44 @@ func TestRefreshExpiredToken(t *testing.T) {
 	}
 
 	// Генерация токена с истекшим сроком действия
-	token, err := GenerateToken(userID, secretKey, -time.Minute, customClaims)
+	token, err := GenerateToken(userID, secretKey, -time.Hour, customClaims)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
 
-	// Попытка обновить истекший токен
-	_, err = RefreshToken(token, secretKey, time.Hour)
+	// Парсинг истекшего токена
+	claims, err := ParseToken(token, secretKey)
+	assert.Error(t, err)
+	assert.Nil(t, claims)
 	assert.Equal(t, ErrExpiredToken, err)
+}
+
+func TestParseToken_InvalidToken(t *testing.T) {
+	secretKey := "my-secret-key"
+	invalidToken := "invalid.token.here"
+
+	// Парсинг невалидного токена
+	claims, err := ParseToken(invalidToken, secretKey)
+	assert.Error(t, err)
+	assert.Nil(t, claims)
+	assert.Equal(t, ErrInvalidToken, err)
+}
+
+func TestParseToken_InvalidSecretKey(t *testing.T) {
+	secretKey := "my-secret-key"
+	userID := 123
+	customClaims := map[string]interface{}{
+		"role":  "admin",
+		"email": "user@example.com",
+	}
+
+	// Генерация токена
+	token, err := GenerateToken(userID, secretKey, time.Hour, customClaims)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, token)
+
+	// Парсинг токена с неверным секретным ключом
+	claims, err := ParseToken(token, "wrong-secret-key")
+	assert.Error(t, err)
+	assert.Nil(t, claims)
+	assert.Equal(t, ErrInvalidToken, err)
 }

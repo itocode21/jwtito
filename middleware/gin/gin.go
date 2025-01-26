@@ -1,14 +1,23 @@
-package middleware
+package gin
 
 import (
+	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/itocode21/jwtito/jwt"
 )
 
-func GinMiddleware(secretKey string) gin.HandlerFunc {
+// Config содержит настройки для middleware.
+type Config struct {
+	SecretKey string        // Секретный ключ для подписи токенов
+	ExpiresIn time.Duration // Время жизни токена
+}
+
+// Middleware возвращает middleware для Gin.
+func Middleware(config Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Получаем заголовок Authorization
 		authHeader := c.GetHeader("Authorization")
@@ -25,24 +34,19 @@ func GinMiddleware(secretKey string) gin.HandlerFunc {
 		}
 
 		// Парсим токен
-		claims, err := jwt.ParseToken(tokenParts[1], secretKey)
+		claims, err := jwt.ParseToken(tokenParts[1], config.SecretKey)
 		if err != nil {
-			switch err {
-			case jwt.ErrExpiredToken:
+			if errors.Is(err, jwt.ErrExpiredToken) {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Token has expired"})
-			case jwt.ErrInvalidToken:
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-			default:
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+				return
 			}
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			return
 		}
 
 		// Сохраняем данные из токена в контекст
 		c.Set("user_id", claims.UserID)
 		c.Set("custom_claims", claims.CustomClaims)
-
-		// Передаем управление следующему обработчику
 		c.Next()
 	}
 }

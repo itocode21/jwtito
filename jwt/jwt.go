@@ -53,12 +53,3 @@ func ParseToken(tokenString, secretKey string) (*Claims, error) {
 
 	return claims, nil
 }
-
-func RefreshToken(tokenString, secretKey string, expiresIn time.Duration) (string, error) {
-	claims, err := ParseToken(tokenString, secretKey)
-	if err != nil {
-		return "", err
-	}
-
-	return GenerateToken(claims.UserID, secretKey, expiresIn, claims.CustomClaims)
-}
