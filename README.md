@@ -130,11 +130,7 @@ func main() {
 * 🧪 Reliability: Comprehensive test coverage for all major scenarios.
 
 # **Future Features**
-
-* Role-Based Access: Adding middleware for role-based access control.
-* Token Blacklist: Implementing a mechanism to revoke tokens.
 * Support for Other Signing Algorithms: Adding support for RS256 and other algorithms.
-* Database Integration: Storing refresh tokens in a database.
 * OAuth2 Support: Integration with OAuth2 providers (Google, GitHub, etc.).
 
 # License
