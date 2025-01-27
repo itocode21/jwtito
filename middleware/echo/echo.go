@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/itocode21/jwtito/jwt"
+	"github.com/itocode21/jwtito/cmd/jwt"
 	"github.com/labstack/echo/v4"
 )
 

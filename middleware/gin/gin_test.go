@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/itocode21/jwtito/jwt"
+	"github.com/itocode21/jwtito/cmd/jwt"
 	"github.com/stretchr/testify/assert"
 )
 
